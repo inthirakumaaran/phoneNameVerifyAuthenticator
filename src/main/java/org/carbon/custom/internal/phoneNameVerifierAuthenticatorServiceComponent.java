@@ -2,19 +2,16 @@ package org.carbon.custom.internal;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.osgi.service.component.ComponentContext;
+import org.carbon.custom.phoneNameVerifierAuthenticator;
 import org.osgi.framework.ServiceRegistration;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
-import org.wso2.carbon.identity.application.authentication.framework.ApplicationAuthenticator;
+import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.Deactivate;
-import org.carbon.custom.phoneNameVerifierAuthenticator;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
+import org.wso2.carbon.identity.application.authentication.framework.ApplicationAuthenticator;
 import org.wso2.carbon.user.core.service.RealmService;
-
-import java.util.Hashtable;
 
 @Component(name = "org.carbon.custom.phoneNameVerifierAuthenticatorServiceComponent", immediate = true)
 
@@ -31,15 +28,15 @@ public class phoneNameVerifierAuthenticatorServiceComponent {
 
         //register the custom local authenticator as an OSGI service.
         serviceRegistration = context.getBundleContext().registerService(ApplicationAuthenticator.class.getName(),
-        new phoneNameVerifierAuthenticator(), null);
+                new phoneNameVerifierAuthenticator(), null);
         log.info("phoneNameVerifierAuthenticatorServiceComponent bundle activated successfully.");
     }
 
     protected void deactivate(ComponentContext context) {
 
         // Unregistering the custom local authenticator service.
-        if(serviceRegistration != null) {
-            if(log.isDebugEnabled()) {
+        if (serviceRegistration != null) {
+            if (log.isDebugEnabled()) {
                 log.debug("phoneNameVerifierAuthenticatorServiceComponent is deactivated.");
             }
             serviceRegistration.unregister();
@@ -47,10 +44,10 @@ public class phoneNameVerifierAuthenticatorServiceComponent {
     }
 
     @Reference(name = "user.realm.service.default",
-              service =RealmService.class,
-              cardinality = ReferenceCardinality.MANDATORY,
-              policy = ReferencePolicy.DYNAMIC,
-              unbind = "unsetRealmService")
+            service = RealmService.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.DYNAMIC,
+            unbind = "unsetRealmService")
     protected void setRealmService(RealmService realmService) {
 
         if (log.isDebugEnabled()) {

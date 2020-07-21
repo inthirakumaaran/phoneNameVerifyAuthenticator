@@ -1,16 +1,15 @@
 package org.carbon.custom;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.carbon.custom.internal.phoneNameVerifierAuthenticatorDataHolder;
 import org.wso2.carbon.identity.application.authentication.framework.AbstractApplicationAuthenticator;
 import org.wso2.carbon.identity.application.authentication.framework.LocalApplicationAuthenticator;
+import org.wso2.carbon.identity.application.authentication.framework.config.ConfigurationFacade;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.exception.AuthenticationFailedException;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
-import org.wso2.carbon.identity.core.model.IdentityErrorMsgContext;
-import org.wso2.carbon.identity.core.util.IdentityUtil;
 import org.wso2.carbon.user.api.UserRealm;
 import org.wso2.carbon.user.api.UserStoreException;
 import org.wso2.carbon.user.core.UserStoreManager;
@@ -20,6 +19,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import static org.carbon.custom.phoneNameVerifierAuthenticatorConstants.CLAIM_MOBILE;
+import static org.carbon.custom.phoneNameVerifierAuthenticatorConstants.CUSTOM_LOGIN_PAGE;
 import static org.carbon.custom.phoneNameVerifierAuthenticatorConstants.DEFAULT_LOGIN_PAGE;
 import static org.carbon.custom.phoneNameVerifierAuthenticatorConstants.INPUT_MOBILE;
 import static org.carbon.custom.phoneNameVerifierAuthenticatorConstants.INPUT_NAME;
@@ -46,7 +46,7 @@ public class phoneNameVerifierAuthenticator extends AbstractApplicationAuthentic
     @Override
     protected void initiateAuthenticationRequest(HttpServletRequest request,
                                                  HttpServletResponse response, AuthenticationContext context)
-        throws AuthenticationFailedException {
+            throws AuthenticationFailedException {
 
         // Use this method to initiate the authentication request. Eg. this may be used to redirect user to a page
         // for submitting credentials.
@@ -55,7 +55,7 @@ public class phoneNameVerifierAuthenticator extends AbstractApplicationAuthentic
 
         try {
             String retryParam;
-            String phoneUsernamePage = DEFAULT_LOGIN_PAGE;
+            String phoneUsernamePage = getLoginPage(CUSTOM_LOGIN_PAGE);
             String queryParams = "?" + sessionDataKeyParam;
             phoneUsernamePage = phoneUsernamePage + queryParams;
 
@@ -96,7 +96,7 @@ public class phoneNameVerifierAuthenticator extends AbstractApplicationAuthentic
     @Override
     protected void processAuthenticationResponse(HttpServletRequest request,
                                                  HttpServletResponse response, AuthenticationContext context)
-        throws AuthenticationFailedException {
+            throws AuthenticationFailedException {
 
         // Does the actual authentication
 
@@ -157,7 +157,11 @@ public class phoneNameVerifierAuthenticator extends AbstractApplicationAuthentic
         String providedMobileNo = httpServletRequest.getParameter(INPUT_MOBILE);
         UserStoreManager userStoreManager = (UserStoreManager) userRealm.getUserStoreManager();
         if (userStoreManager.isExistingUser(providedName)) {
-            return getUsername(userStoreManager.getUserList(CLAIM_MOBILE, providedMobileNo, DEFAULT_PROFILE));
+            String mobileNoOwener = getUsername(userStoreManager.getUserList(CLAIM_MOBILE, providedMobileNo,
+                    DEFAULT_PROFILE));
+            if (StringUtils.equals(providedName, mobileNoOwener)) {
+                return providedName;
+            }
         }
         return null;
     }
@@ -180,5 +184,12 @@ public class phoneNameVerifierAuthenticator extends AbstractApplicationAuthentic
             }
         }
         return null;
+    }
+
+    // switch the authentication page
+    private String getLoginPage(String authenticatorLoginPage) throws AuthenticationFailedException {
+
+        return ConfigurationFacade.getInstance().getAuthenticationEndpointURL()
+                .replace(DEFAULT_LOGIN_PAGE, authenticatorLoginPage);
     }
 }

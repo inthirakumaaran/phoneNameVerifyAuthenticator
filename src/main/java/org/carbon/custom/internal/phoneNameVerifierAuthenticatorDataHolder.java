@@ -8,7 +8,6 @@ public class phoneNameVerifierAuthenticatorDataHolder {
 
     private RealmService realmService;
 
-
     private phoneNameVerifierAuthenticatorDataHolder() {
 
     }
