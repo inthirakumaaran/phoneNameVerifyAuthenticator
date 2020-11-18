@@ -1,7 +1,6 @@
 ### About
 
 This a sample authenticator that validates username and mobile number to authenticate.
-**Note**: here mobile number should be a unique element.
 
 ### Try
 
