@@ -15,6 +15,7 @@ import org.wso2.carbon.user.api.UserStoreException;
 import org.wso2.carbon.user.core.UserStoreManager;
 
 import java.io.IOException;
+import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -25,7 +26,6 @@ import static org.carbon.custom.phoneNameVerifierAuthenticatorConstants.INPUT_MO
 import static org.carbon.custom.phoneNameVerifierAuthenticatorConstants.INPUT_NAME;
 import static org.carbon.custom.phoneNameVerifierAuthenticatorConstants.SESSION_DATA_KEY;
 import static org.carbon.custom.phoneNameVerifierAuthenticatorConstants.SUPER_TENANT_ID;
-import static org.wso2.carbon.user.core.UserCoreConstants.DEFAULT_PROFILE;
 
 /**
  * Authenticator of phoneNameVerifier.
@@ -99,18 +99,11 @@ public class phoneNameVerifierAuthenticator extends AbstractApplicationAuthentic
             throws AuthenticationFailedException {
 
         // Does the actual authentication
-
-        try {
-            UserRealm userRealm = phoneNameVerifierAuthenticatorDataHolder.getInstance().getRealmService()
-                    .getTenantUserRealm(SUPER_TENANT_ID);
-            String userName = validateMobileNumber(request, userRealm);
-            if (StringUtils.isBlank(userName)) {
-                throw new AuthenticationFailedException("Entered username and phoneNumber doesn't not match");
-            }
-            context.setSubject(AuthenticatedUser.createLocalAuthenticatedUserFromSubjectIdentifier(userName));
-        } catch (UserStoreException e) {
-            throw new AuthenticationFailedException("Error while getting user store manager.", e);
+        String userName = validateMobileNumber(request);
+        if (userName == null) {
+            throw new AuthenticationFailedException("Entered username and phoneNumber doesn't not match");
         }
+        context.setSubject(AuthenticatedUser.createLocalAuthenticatedUserFromSubjectIdentifier(userName));
     }
 
     /**
@@ -146,33 +139,50 @@ public class phoneNameVerifierAuthenticator extends AbstractApplicationAuthentic
      * Check mobile number and user name are correct.
      * If multiple/no user exits it returns null
      * @param httpServletRequest
-     * @param userRealm
      * @return
      * @throws UserStoreException
      */
-    private String validateMobileNumber(HttpServletRequest httpServletRequest, UserRealm userRealm)
-            throws UserStoreException {
+    private String validateMobileNumber(HttpServletRequest httpServletRequest) {
 
         String providedName = httpServletRequest.getParameter(INPUT_NAME);
         String providedMobileNo = httpServletRequest.getParameter(INPUT_MOBILE);
-        UserStoreManager userStoreManager = (UserStoreManager) userRealm.getUserStoreManager();
-        if (userStoreManager.isExistingUser(providedName)) {
-            String mobileNoOwener = getUsername(userStoreManager.getUserList(CLAIM_MOBILE, providedMobileNo,
-                    DEFAULT_PROFILE));
-            if (StringUtils.equals(providedName, mobileNoOwener)) {
+
+        String mobile = getMobileFromUsername(providedName);
+        if (StringUtils.equalsIgnoreCase(mobile, providedMobileNo)) {
                 return providedName;
-            }
         }
         return null;
     }
 
-    //extract username from given userList
-    private String getUsername(String[] userList) {
+    /**
+     * Get mobile number of a given username
+     * @param username
+     * @return mobile number
+     */
+    private String getMobileFromUsername(String username) {
 
-        if (userList.length == 1) {
-            return userList[0];
+        String mobile = null;
+        try {
+            UserRealm userRealm = phoneNameVerifierAuthenticatorDataHolder.getInstance().getRealmService()
+                    .getTenantUserRealm(SUPER_TENANT_ID);
+            UserStoreManager userStoreManager = (UserStoreManager) userRealm.getUserStoreManager();
+
+            if (userStoreManager.isExistingUser(username)) {
+                Map<String, String> values = userStoreManager.getUserClaimValues(username,
+                        new String[]{CLAIM_MOBILE}, null);
+                mobile = values.get(CLAIM_MOBILE);
+                if (log.isDebugEnabled()) {
+                    log.debug("Retrieved " + CLAIM_MOBILE + " claim value: " + mobile + " for user: " + username);
+                }
+            } else {
+                if (log.isDebugEnabled()) {
+                    log.debug("No local user found with the username: " + username);
+                }
+            }
+        } catch (UserStoreException e) {
+            log.error("Error occurred while retrieving " + CLAIM_MOBILE + " claim value.", e);
         }
-        return null;
+        return mobile;
     }
 
     private String getSessionDataKey(AuthenticationContext context) {
