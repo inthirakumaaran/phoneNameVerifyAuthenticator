@@ -92,7 +92,7 @@
         <commons-collections.wso2.osgi.version.range>[3.2.0,4.0.0)</commons-collections.wso2.osgi.version.range>
         <org.apache.felix.scr.ds-annotations.version>1.2.4</org.apache.felix.scr.ds-annotations.version>
         <org.eclipse.osgi.version>3.9.1.v20130814-1242</org.eclipse.osgi.version>
-        <carbon.identity.framework.version>5.12.387</carbon.identity.framework.version>
+        <carbon.identity.framework.version>5.20.254</carbon.identity.framework.version>
     </properties>
 
 </project>
